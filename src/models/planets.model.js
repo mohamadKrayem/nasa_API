@@ -3,6 +3,7 @@ const path = require("path")
 const csv = require("csv-parse");
 
 const parse = csv.parse;
+const habitalePlanets= new Map();
 const planets = new Map();
 
 function isHabitable(planet){
@@ -12,6 +13,10 @@ function isHabitable(planet){
       &&  (planet['koi_prad']<1.6)
     ) 
 }
+
+function getAllHabitablePlanets(){
+   return Array.from(habitalePlanets.values());
+} 
 
 function getAllPlanets(){
    return Array.from(planets.values());
@@ -25,8 +30,16 @@ function loadPlanets() {
          comment: "#"
       })).on("data", (data) => {
          if(isHabitable(data)) {
-            planets.set(data["kepid"], data)
+            habitalePlanets.set(data["kepid"], data)
          }
+         const planet = {
+            kepid: data['kepid'],
+            kepler_name: data['kepler_name'],
+            koi_disposition: data['koi_disposition'],
+            koi_insol: data['koi_insol'],
+            koi_prad: data['koi_prad']
+         }
+         planets.set(data["kepid"], planet);
       })
       .on("error", (err) => {
          reject(err);
@@ -38,7 +51,7 @@ function loadPlanets() {
 }
 
 function existsPlanet(planetID) {
-   return planets.get(planetID);
+   return habitalePlanets.get(planetID);
 }
 
 function existsPlanetByName(planetName) {
@@ -55,6 +68,7 @@ function existsPlanetByName(planetName) {
 module.exports = {
    loadPlanets,
    getAllPlanets,
+   getAllHabitablePlanets,
    existsPlanet,
    existsPlanetByName
 }

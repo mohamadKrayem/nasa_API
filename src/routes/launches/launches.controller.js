@@ -31,7 +31,11 @@ function httpPostLaunch(req, res) {
 
 function httpDeleteLaunch(req, res) {
    const launchID = req.params.id
-   console.log(launchID)
+   if(isNaN(Number(launchID))) {
+      return res.status(400).json({
+         error: "Id is not a number !!!"
+      })
+   }
    const deletedLaunch = launchesModel.removeLaunch(launchID);
 
    if(deletedLaunch){
