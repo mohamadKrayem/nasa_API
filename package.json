@@ -5,13 +5,15 @@
   "main": "src/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch": "port=9000 node --watch src/server.js"
+    "watch": "port=9000 node --watch src/server.js",
+    "cluster": "pm2 start src/server.js -i 3"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "csv-parse": "^5.3.4",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "pm2": "^5.2.2"
   }
 }
