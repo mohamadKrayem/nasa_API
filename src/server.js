@@ -1,12 +1,20 @@
-const http = require("http")
-const app = require('./app');
-const {loadPlanets} = require("./models/planets.model");
+const http = require("http");
+const app = require("./app");
+const { loadPlanets } = require("./models/planets.model");
+const mongoConnect = require("./services/mongo");
 
 const server = http.createServer(app);
 const PORT = Number(process.env.port) || 3000;
 
-loadPlanets().then(()=>{
-   server.listen(PORT, ((port)=>{
-      console.log("we are listening, PORT=",port);
-   }).bind(null, PORT))
-})
+mongoConnect()
+  .then(() => {
+    loadPlanets();
+  })
+  .then(() => {
+    server.listen(
+      PORT,
+      ((port) => {
+        console.log("We are listening, PORT=", port);
+      }).bind(null, PORT)
+    );
+  });

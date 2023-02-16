@@ -1,74 +1,97 @@
-const fs = require("fs")
-const path = require("path")
+const fs = require("fs");
+const planetsMongo = require("./planets.mongo");
+const path = require("path");
 const csv = require("csv-parse");
 
 const parse = csv.parse;
-const habitalePlanets= new Map();
-const planets = new Map();
 
-function isHabitable(planet){
-    return(
-      (planet['koi_disposition'] == 'CONFIRMED')
-      &&  (planet['koi_insol'] > 0.36 && planet['koi_insol'] < 1.11)
-      &&  (planet['koi_prad']<1.6)
-    ) 
+function isHabitable(planet) {
+    return (
+        planet["koi_disposition"] == "CONFIRMED" &&
+        planet["koi_insol"] > 0.36 &&
+        planet["koi_insol"] < 1.11 &&
+        planet["koi_prad"] < 1.6
+    );
 }
 
-function getAllHabitablePlanets(){
-   return Array.from(habitalePlanets.values());
-} 
+async function getAllHabitablePlanets() {
+    return await planetsMongo.find(
+        {},
+        {
+            __v: 0,
+            _id: 0,
+        }
+    );
+}
 
-function getAllPlanets(){
-   return Array.from(planets.values());
+async function savePlanet(data) {
+    try {
+        await planetsMongo.updateOne(
+            {
+                kepler_name: data.kepler_name,
+            },
+            {
+                kepler_name: data.kepler_name,
+            },
+            {
+                upsert: true,
+            }
+        );
+    } catch (err) {
+        console.log(err);
+    }
+    /*.catch((err) => {
+                      console.log(err);
+                  });*/
 }
 
 function loadPlanets() {
-   return new Promise((resolve, reject) => {
-      fs.createReadStream(path.join(__dirname, "..", "..", "data", "kepler_data.csv"))
-      .pipe(parse({
-         columns: true,
-         comment: "#"
-      })).on("data", (data) => {
-         if(isHabitable(data)) {
-            habitalePlanets.set(data["kepid"], data)
-         }
-         const planet = {
-            kepid: data['kepid'],
-            kepler_name: data['kepler_name'],
-            koi_disposition: data['koi_disposition'],
-            koi_insol: data['koi_insol'],
-            koi_prad: data['koi_prad']
-         }
-         planets.set(data["kepid"], planet);
-      })
-      .on("error", (err) => {
-         reject(err);
-      })
-      .on("end", () => {
-         resolve();
-      })
-   })
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(
+            path.join(__dirname, "..", "..", "data", "kepler_data.csv")
+        )
+            .pipe(
+                parse({
+                    columns: true,
+                    comment: "#",
+                })
+            )
+            .on("data", async (data) => {
+                if (isHabitable(data)) {
+                    await savePlanet(data);
+                }
+            })
+            .on("error", (err) => {
+                reject(err);
+            })
+            .on("end", () => {
+                resolve();
+            });
+    });
 }
 
-function existsPlanet(planetID) {
-   return habitalePlanets.get(planetID);
+async function existsPlanet(planetID) {
+    const planet = await planetsMongo.findOne({ flightNumber: planetID });
+    if (!planet) {
+        return false;
+    }
+    return planet;
 }
 
-function existsPlanetByName(planetName) {
-   const arrayOfPlanets = getAllPlanets();
-   for(let planet of arrayOfPlanets){
-      if(planet["kepler_name"] == planetName){
-         return true;
-      }
-   }
+async function existsPlanetByName(planetName) {
+    const planet = await planetsMongo.findOne({
+        kepler_name: planetName,
+    });
 
-   return false
+    if (!planet) {
+        return false;
+    }
+    return true;
 }
 
 module.exports = {
-   loadPlanets,
-   getAllPlanets,
-   getAllHabitablePlanets,
-   existsPlanet,
-   existsPlanetByName
-}
+    loadPlanets,
+    getAllHabitablePlanets,
+    existsPlanet,
+    existsPlanetByName,
+};
